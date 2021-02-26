@@ -18,13 +18,19 @@ const ttf2woff2 = require('gulp-ttf2woff2');
 function browsersync() {
 	browserSync.init({
 		server: {
-			baseDir: source_folder + "/"
+			baseDir: project_folder + "/"
 		}
 	});
 }
 
 function cleanDist() {
 	return del(project_folder);
+}
+
+function html() {
+	return src(source_folder + '/*.html')
+		.pipe(dest(project_folder + '/'))
+		.pipe(browserSync.stream())
 }
 
 function styles() {
@@ -35,14 +41,16 @@ function styles() {
 			overrideBrowserslist: ["last 10 version"],
 			grid: true
 		}))
-		.pipe(dest(source_folder + '/css'))
+		.pipe(dest(project_folder + '/css/'))
 		.pipe(browserSync.stream())
 }
 
 function scripts() {
-	return src(source_folder + '/js/src_js/index.js')
+	src(source_folder + '/libs/js/*.js')
+		.pipe(dest(project_folder + '/js/'));
+	return src(source_folder + '/js/index.js')
 		.pipe(webpackStream(webpackConfig), webpack)
-		.pipe(dest(source_folder + '/js/'))
+		.pipe(dest(project_folder + '/js/'))
 		.pipe(browserSync.stream())
 }
 
@@ -61,33 +69,38 @@ function images() {
 				})
 			]
 		))
-		.pipe(dest(project_folder + '/images'))
+		.pipe(dest(project_folder + '/images/'))
+		.pipe(browserSync.stream())
 }
 
-function fonts() {
-	src(source_folder + '/fonts/**/*')
+function convertFonts() {
+	src(source_folder + '/fonts/**/*.ttf')
 		.pipe(ttf2woff())
-		.pipe(dest(project_folder + '/fonts/'));
-	return src(source_folder + '/fonts/**/*')
+		.pipe(dest(source_folder + '/fonts/'));
+	return src(source_folder + '/fonts/**/*.ttf')
 		.pipe(ttf2woff2())
-		.pipe(dest(project_folder + '/fonts/'));
+		.pipe(dest(source_folder + '/fonts/'));
 }
 
-function build() {
-	return src([
-		source_folder + '/css/style.min.css',
-		source_folder + '/js/*.js',
-		source_folder + '/*.html'
-	], {base: source_folder})
-	.pipe(dest(project_folder))
+function moveFonts() {
+	del(source_folder + '/fonts/**/*.ttf');
+	return src([source_folder + '/fonts/**/*.woff', source_folder + '/fonts/**/*.woff2'])
+		.pipe(dest(project_folder + '/fonts/'));
 }
 
 function watching() {
 	watch([source_folder + '/scss/**/*.scss'], styles);
-	watch([source_folder + '/js/**/*.js', '!' + source_folder + '/js/main.min.js'], scripts);
-	watch([source_folder + '/*.html']).on('change', browserSync.reload);
+	watch([source_folder + '/js/**/*.js'], scripts);
+	watch([source_folder + '/*.html'], html);
+	watch([source_folder + '/images/**/*'], images);
 }
 
+const fonts = series(convertFonts, moveFonts)
+const build = series(cleanDist, images, fonts, html, styles, scripts);
+
+exports.moveFonts = moveFonts;
+exports.convertFonts = convertFonts;
+exports.build = build;
 exports.fonts = fonts;
 exports.styles = styles;
 exports.watching = watching;
@@ -96,5 +109,4 @@ exports.scripts = scripts;
 exports.images = images;
 exports.cleanDist = cleanDist;
 
-exports.build = series(cleanDist, images, fonts, build);
-exports.default = parallel(styles, scripts, browsersync, watching);
+exports.default = series(build, parallel(watching, browsersync));
