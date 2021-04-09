@@ -9,7 +9,13 @@ html, body {
 	width: 100%;
 }
 
-ul {
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+ul,
+li {
 	list-style: none;
 }
 
