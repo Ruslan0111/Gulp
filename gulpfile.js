@@ -2,18 +2,12 @@ const project_folder = './dist';
 const source_folder = './app';
 
 const { src, dest, watch, parallel, series } = require('gulp');
-const webpack = require('webpack');
-const webpackStream = require('webpack-stream');
-const webpackConfig = require('./webpack.config.js');
 const scss = require('gulp-sass');
 const concat = require('gulp-concat');
 const browserSync = require('browser-sync').create();
 const uglify = require('gulp-uglify-es').default;
 const autoprefixer = require('gulp-autoprefixer');
-const imagemin = require('gulp-imagemin');
 const del = require('del');
-const ttf2woff = require('gulp-ttf2woff');
-const ttf2woff2 = require('gulp-ttf2woff2');
 
 function browsersync() {
 	browserSync.init({
@@ -47,32 +41,24 @@ function styles() {
 
 function scripts() {
 	src(source_folder + '/libs/js/*.js')
+		.pipe(uglify())
+		.pipe(concat('libs.min.js'))
 		.pipe(dest(project_folder + '/js/'));
-	return src(source_folder + '/js/index.js')
-		.pipe(webpackStream(webpackConfig), webpack)
+	return src(source_folder + '/js/*.js')
+		.pipe(uglify())
+		.pipe(concat('main.min.js'))
 		.pipe(dest(project_folder + '/js/'))
 		.pipe(browserSync.stream())
 }
 
 function images() {
-	del(project_folder + '/images')
 	return src(source_folder + '/images/**/*')
 		.pipe(dest(project_folder + '/images/'))
 		.pipe(browserSync.stream())
 }
 
-function convertFonts() {
-	src(source_folder + '/fonts/**/*.ttf')
-		.pipe(ttf2woff())
-		.pipe(dest(source_folder + '/fonts/'));
-	return src(source_folder + '/fonts/**/*.ttf')
-		.pipe(ttf2woff2())
-		.pipe(dest(source_folder + '/fonts/'));
-}
-
-function moveFonts() {
-	del(source_folder + '/fonts/**/*.ttf');
-	return src([source_folder + '/fonts/**/*.woff', source_folder + '/fonts/**/*.woff2'])
+function fonts() {
+	return src(source_folder + '/fonts/**/*')
 		.pipe(dest(project_folder + '/fonts/'));
 }
 
@@ -81,13 +67,11 @@ function watching() {
 	watch([source_folder + '/js/**/*.js'], scripts);
 	watch([source_folder + '/*.html'], html);
 	watch([source_folder + '/images/**/*'], images);
+	watch([source_folder + '/fonts/**/*'], fonts);
 }
 
-const fonts = series(convertFonts, moveFonts)
 const build = series(cleanDist, images, fonts, html, styles, scripts);
 
-exports.moveFonts = moveFonts;
-exports.convertFonts = convertFonts;
 exports.build = build;
 exports.fonts = fonts;
 exports.styles = styles;
