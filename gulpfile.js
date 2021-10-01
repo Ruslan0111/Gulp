@@ -2,7 +2,7 @@ const project_folder = './dist';
 const source_folder = './app';
 
 const { src, dest, watch, parallel, series } = require('gulp');
-const scss = require('gulp-sass');
+const scss = require('gulp-sass')(require('node-sass'));
 const concat = require('gulp-concat');
 const browserSync = require('browser-sync').create();
 const uglify = require('gulp-uglify-es').default;
