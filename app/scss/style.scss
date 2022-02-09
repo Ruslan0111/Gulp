@@ -1,8 +1,9 @@
-@import "../libs/css/reset";
 @import "vars";
 @import "fonts";
 @import "global";
 
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @import "media";
